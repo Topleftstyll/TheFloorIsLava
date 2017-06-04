@@ -1,6 +1,7 @@
 package com.topleftstyll.thefloorislava;
 
 import android.graphics.Rect;
+import android.util.Log;
 import android.view.MotionEvent;
 
 import java.util.ArrayList;
@@ -12,12 +13,19 @@ import java.util.ArrayList;
 public class InputController {
 
     Rect pause;
+    private float mStartingPositionY;
+    private double mVerticalFactor;
+
+    private final double mMaxDistance;
 
     InputController(int screenWidth, int screenHeight) {
         // configure the player buttons
         int buttonWidth = screenWidth / 8;
         int buttonHeight = screenHeight / 7;
         int buttonPadding = screenWidth / 80;
+
+        double pixelFactor = screenHeight / 400d;
+        mMaxDistance = 50*pixelFactor;
 
         pause = new Rect(screenWidth - buttonPadding - buttonWidth, buttonPadding, screenWidth - buttonPadding, buttonPadding + buttonHeight);
     }
@@ -39,11 +47,31 @@ public class InputController {
                     case MotionEvent.ACTION_DOWN:
                         if (pause.contains(x, y)) {
                             l.switchPlayingStatus();
+                        } else {
+                            mStartingPositionY = motionEvent.getY(0);
+                            System.out.println(mStartingPositionY);
                         }
                         break;
                     case MotionEvent.ACTION_POINTER_DOWN:
                         if (pause.contains(x, y)) {
                             l.switchPlayingStatus();
+                        }
+                        break;
+                    case MotionEvent.ACTION_UP:
+                        mVerticalFactor = 0;
+                        break;
+                    case MotionEvent.ACTION_MOVE:
+                        if(!pause.contains(x,y)){
+                            mVerticalFactor = (motionEvent.getY(0) - mStartingPositionY) / mMaxDistance;
+                            System.out.println(mVerticalFactor);
+                            System.out.println("DAA");
+                            if (mVerticalFactor < -1) {
+                                System.out.println("ADAFn");
+                                l.player.startJump();
+                            } else {
+                                System.out.println("hyuhui");
+                                mVerticalFactor = -1;
+                            }
                         }
                         break;
 
