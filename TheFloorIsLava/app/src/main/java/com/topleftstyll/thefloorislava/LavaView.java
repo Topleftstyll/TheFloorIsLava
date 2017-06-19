@@ -6,6 +6,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
+import android.graphics.PointF;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.util.Log;
@@ -94,10 +95,13 @@ public class LavaView extends SurfaceView implements Runnable{
                     if (hit > 0) {
                         // collision now deal with different types
                         switch (go.getType()) {
+                            case 'f':
+                                loadLevel("LevelBedroom", 15, 2);
                             default:
                                 // TODO: add crying sound and effect
-                                if (hit == 1) {
+                                if (hit == 1 || hit == 3) {
                                     // TODO: player dies
+                                    loadLevel("LevelBedroom", 15, 2);
                                 }
                                 if (hit == 2) { //feet
                                     lm.player.isFalling = false;
@@ -116,10 +120,19 @@ public class LavaView extends SurfaceView implements Runnable{
                 }
             }
         }
-
         if (lm.isPlaying()) {
-            // reset the players location as the center of the viewport
+            //reset the players location as the centre of the viewport
             vp.setWorldCenter(lm.gameObjects.get(lm.playerIndex).getWorldLocation().x, lm.gameObjects.get(lm.playerIndex).getWorldLocation().y, X_OFFSET);
+
+            //has the player fallen out of the map?
+            if(lm.player.getWorldLocation().y > lm.mapHeight) {
+                loadLevel("LevelBedroom", 15, 1);
+            }
+
+            //check if game is over
+            if (lm.player.getxVelocity() <= 0) {
+                loadLevel("LevelBedroom" , 15, 2);
+            }
         }
     }
 
@@ -147,8 +160,16 @@ public class LavaView extends SurfaceView implements Runnable{
                             //Get the next frame of the bitmap
                             //Rotate if necessary
                             if(go.getFacing() == 1) {
-                                ///ROTATE
+                                //ROTATE
                                 Matrix flipper = new Matrix();
+                                flipper.preScale(-1, 1);
+                                Rect r = go.getRectToDraw(System.currentTimeMillis());
+                                Bitmap b = Bitmap.createBitmap(lm.bitmapsArray[lm.getBitmapIndex(go.getType())], r.left, r.top, r.width(), r.height(), flipper, true);
+                                canvas.drawBitmap(b, toScreen2d.left, toScreen2d.top, paint);
+                            } else if(go.getFacing() == 2) {
+                                // Rotate for slide
+                                Matrix flipper = new Matrix();
+                                flipper.preRotate(-90);
                                 flipper.preScale(-1, 1);
                                 Rect r = go.getRectToDraw(System.currentTimeMillis());
                                 Bitmap b = Bitmap.createBitmap(lm.bitmapsArray[lm.getBitmapIndex(go.getType())], r.left, r.top, r.width(), r.height(), flipper, true);

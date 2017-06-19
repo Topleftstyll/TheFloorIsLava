@@ -69,6 +69,9 @@ public class LevelManager {
             case 'p':
                 index = 2;
                 break;
+            case 'f':
+                index = 3;
+                break;
             default:
                 index = 0;
                 break;
@@ -90,6 +93,9 @@ public class LevelManager {
                 break;
             case 'p':
                 index = 2;
+                break;
+            case 'f':
+                index = 3;
                 break;
             default:
                 index = 0;
@@ -130,6 +136,10 @@ public class LevelManager {
                             playerIndex = currentIndex;
                             //we want a reference to the player
                             player = (Player) gameObjects.get(playerIndex);
+                            break;
+                        case 'f':
+                            //Add fire to the gameobjects
+                            gameObjects.add(new Fire(context, j, i, c, pixelsPerMeter));
                             break;
                     }
                     //if the bitmap isn't prepared yet

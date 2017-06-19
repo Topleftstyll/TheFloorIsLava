@@ -14,4 +14,5 @@ public class LevelData {
     // tile types
     // . = no tiles
     // 1 = Grass
+    // f = Fire
 }

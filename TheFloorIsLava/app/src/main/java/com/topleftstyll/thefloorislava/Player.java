@@ -1,6 +1,7 @@
 package com.topleftstyll.thefloorislava;
 
 import android.content.Context;
+import android.graphics.DashPathEffect;
 
 /**
  * Created by Topleftstyll on 5/16/2017.
@@ -18,8 +19,13 @@ public class Player extends GameObject {
 
     public boolean isFalling;
     private boolean isJumping;
+    private boolean isSliding = false;
     private long jumpTime;
-    private long maxJumpTime = 700; // jump 7 10ths of a second
+    private long slideTime;
+    private long maxSlideTime = 700;
+    private long maxJumpTime = 1000; // jump 7 10ths of a second
+
+    float startY;
 
     Player(Context context, float worldStartX, float worldStartY, int pixelsPerMeter) {
         final float HEIGHT = 2;
@@ -66,6 +72,10 @@ public class Player extends GameObject {
 
         //jumping and gravity
         if (isJumping) {
+            isSliding = false;
+            setFacing(RIGHT);
+            setHeight(2);
+            setWidth(1);
             long timeJumping = System.currentTimeMillis() - jumpTime;
             if (timeJumping < maxJumpTime) {
                 if (timeJumping < maxJumpTime / 2) {
@@ -75,6 +85,21 @@ public class Player extends GameObject {
                 }
             } else {
                 isJumping = false;
+            }
+        } else if(isSliding) {
+            long timeSliding = System.currentTimeMillis() - slideTime;
+            if (timeSliding < maxSlideTime) {
+                setFacing(2);
+                setHeight(1);
+                setWidth(2);
+                this.setWorldLocationX(getWorldLocation().x + 0.1f);
+                this.setyVelocity(0);
+            } else {
+                setHeight(2);
+                setWidth(1);
+                this.setWorldLocationY(startY);
+                setFacing(RIGHT);
+                isSliding = false;
             }
         } else {
             this.setyVelocity(gravity);
@@ -90,30 +115,38 @@ public class Player extends GameObject {
         float lx = location.x;
         float ly = location.y;
 
-        // TODO: CHANGE DEPENDING ON NEW CHARACTER
-        //update the player feet hitbox
-        rectHitboxFeet.top = ly + getHeight() * .95f;
-        rectHitboxFeet.left = lx + getWidth() * .2f;
-        rectHitboxFeet.bottom = ly + getHeight() * .98f;
-        rectHitboxFeet.right = lx + getWidth() * .8f;
+        if (!isSliding) {
+            // TODO: CHANGE DEPENDING ON NEW CHARACTER
+            //update the player feet hitbox
+            rectHitboxFeet.top = ly + getHeight() * .95f;
+            rectHitboxFeet.left = lx + getWidth() * .2f;
+            rectHitboxFeet.bottom = ly + getHeight() * .98f;
+            rectHitboxFeet.right = lx + getWidth() * .8f;
 
-        //update player head hitbox
-        rectHitboxHead.top = ly;
-        rectHitboxHead.left = lx + getWidth() * .4f;
-        rectHitboxHead.bottom = ly + getHeight() * .2f;
-        rectHitboxHead.right = lx + getWidth() * .6f;
+            //update player head hitbox
+            rectHitboxHead.top = ly;
+            rectHitboxHead.left = lx + getWidth() * .4f;
+            rectHitboxHead.bottom = ly + getHeight() * .2f;
+            rectHitboxHead.right = lx + getWidth() * .6f;
 
-        //update player left hitbox
-        rectHitboxLeft.top = ly + getHeight() * .2f;
-        rectHitboxLeft.left = lx + getWidth() * .2f;
-        rectHitboxLeft.bottom = ly + getHeight() * .8f;
-        rectHitboxLeft.right = lx + getWidth() * .3f;
+            //update player left hitbox
+            rectHitboxLeft.top = ly + getHeight() * .2f;
+            rectHitboxLeft.left = lx + getWidth() * .2f;
+            rectHitboxLeft.bottom = ly + getHeight() * .8f;
+            rectHitboxLeft.right = lx + getWidth() * .3f;
 
-        //update player right hitbox
-        rectHitboxRight.top = ly + getHeight() * .2f;
-        rectHitboxRight.left = lx + getWidth() * .2f;
-        rectHitboxRight.bottom = ly + getHeight() * .8f;
-        rectHitboxRight.right = lx + getWidth() * .7f;
+            //update player right hitbox
+            rectHitboxRight.top = ly + getHeight() * .2f;
+            rectHitboxRight.left = lx + getWidth() * .2f;
+            rectHitboxRight.bottom = ly + getHeight() * .8f;
+            rectHitboxRight.right = lx + getWidth() * .7f;
+        } else {
+            //update player right hitbox
+            rectHitboxRight.top = ly + getHeight() * .2f;
+            rectHitboxRight.left = lx + getWidth() * .2f;
+            rectHitboxRight.bottom = ly + getHeight() * .8f;
+            rectHitboxRight.right = lx + getWidth() * .7f;
+        }
     }
 
     public int checkCollisions(RectHitbox rectHitbox) {
@@ -161,6 +194,14 @@ public class Player extends GameObject {
                 jumpTime = System.currentTimeMillis();
                 // TODO: add sm.playSound("jump");
             }
+        }
+    }
+
+    public void startSlide() {
+        startY = getWorldLocation().y;
+        if (!isFalling || !isSliding) { // cant slide if falling or sliding
+            isSliding = true;
+            slideTime = System.currentTimeMillis();
         }
     }
 }

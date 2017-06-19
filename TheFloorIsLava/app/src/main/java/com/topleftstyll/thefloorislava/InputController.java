@@ -63,14 +63,12 @@ public class InputController {
                     case MotionEvent.ACTION_MOVE:
                         if(!pause.contains(x,y)){
                             mVerticalFactor = (motionEvent.getY(0) - mStartingPositionY) / mMaxDistance;
-                            System.out.println(mVerticalFactor);
-                            System.out.println("DAA");
                             if (mVerticalFactor < -1) {
-                                System.out.println("ADAFn");
                                 l.player.startJump();
-                            } else {
-                                System.out.println("hyuhui");
-                                mVerticalFactor = -1;
+                                System.out.println("JUMP");
+                            } else if (mVerticalFactor > 1){
+                                System.out.println("SLIDE");
+                                l.player.startSlide();
                             }
                         }
                         break;
