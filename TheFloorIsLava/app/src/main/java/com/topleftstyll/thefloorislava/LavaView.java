@@ -35,10 +35,16 @@ public class LavaView extends SurfaceView implements Runnable{
     long timeThisFrame;
     long fps;
 
+    boolean youWin;
+    boolean youLose;
+    boolean tappedWin;
+    boolean tappedLose;
+
     // our new engine classes
     private LevelManager lm;
     private Viewport vp;
     InputController ic;
+    private LavaView lv;
 
     private final int X_OFFSET = 10; // so character isnt center of camera and is a bit to the left
 
@@ -62,6 +68,23 @@ public class LavaView extends SurfaceView implements Runnable{
         if (lm != null) {
             ic.handleInput(motionEvent, lm, vp); // TODO: add sm to the list
         }
+        if(youLose || youWin) {
+            switch (motionEvent.getAction() & MotionEvent.ACTION_MASK) {
+                case MotionEvent.ACTION_DOWN:
+                    if(youWin) {
+                        youWin = false;
+                        tappedWin = true;
+                        System.out.println(tappedWin);
+                    } else if (youLose) {
+                        youLose = false;
+                        tappedLose = true;
+                        lm.switchPlayingStatus();
+                        System.out.println(tappedLose + " " + youLose);
+
+                    }
+                    break;
+            }
+        }
         return true;
     }
 
@@ -84,9 +107,9 @@ public class LavaView extends SurfaceView implements Runnable{
 
     private void update() {
         for (GameObject go : lm.gameObjects) {
-            if(go.isActive()) {
+            if (go.isActive()) {
                 //Clip anything offscreen
-                if (!vp.clipObjects(go.getWorldLocation().x,go.getWorldLocation().y, go.getWidth(),go.getHeight())) {
+                if (!vp.clipObjects(go.getWorldLocation().x, go.getWorldLocation().y, go.getWidth(), go.getHeight())) {
                     //set visible flag to true
                     go.setVisible(true);
 
@@ -96,12 +119,15 @@ public class LavaView extends SurfaceView implements Runnable{
                         // collision now deal with different types
                         switch (go.getType()) {
                             case 'f':
-                                loadLevel("LevelBedroom", 15, 2);
+                                youLose = true;
+                                lm.player.setxVelocity(0);
+                                lm.switchPlayingStatus();
                             default:
                                 // TODO: add crying sound and effect
                                 if (hit == 1 || hit == 3) {
-                                    // TODO: player dies
-                                    loadLevel("LevelBedroom", 15, 2);
+                                    youLose = true;
+                                    lm.player.setxVelocity(0);
+                                    lm.switchPlayingStatus();
                                 }
                                 if (hit == 2) { //feet
                                     lm.player.isFalling = false;
@@ -124,15 +150,25 @@ public class LavaView extends SurfaceView implements Runnable{
             //reset the players location as the centre of the viewport
             vp.setWorldCenter(lm.gameObjects.get(lm.playerIndex).getWorldLocation().x, lm.gameObjects.get(lm.playerIndex).getWorldLocation().y, X_OFFSET);
 
-            //has the player fallen out of the map?
-            if(lm.player.getWorldLocation().y > lm.mapHeight) {
-                loadLevel("LevelBedroom", 15, 1);
+            if (lm.player.getWorldLocation().x > 599) {
+                // win
+                lm.player.setxVelocity(0);
+                lm.switchPlayingStatus();
+                youWin = true;
             }
 
-            //check if game is over
-            if (lm.player.getxVelocity() <= 0) {
-                loadLevel("LevelBedroom" , 15, 2);
+            //has the player fallen out of the map?
+            if (lm.player.getWorldLocation().y > lm.mapHeight || youLose) {
+                youLose = true;
+                lm.player.setxVelocity(0);
+                lm.switchPlayingStatus();
             }
+        }
+        if (tappedLose) {
+            lose();
+        }
+        if (tappedWin) {
+            win();
         }
     }
 
@@ -153,20 +189,20 @@ public class LavaView extends SurfaceView implements Runnable{
             for (int layer = -1; layer <= 1; layer ++) {
                 for (GameObject go : lm.gameObjects) {
                     //Only draw if visible and this layer
-                    if(go.isVisible() && go.getWorldLocation().z == layer) {
-                        toScreen2d.set(vp.worldToScreen(go.getWorldLocation().x,go.getWorldLocation().y,go.getWidth(),go.getHeight()));
+                    if (go.isVisible() && go.getWorldLocation().z == layer) {
+                        toScreen2d.set(vp.worldToScreen(go.getWorldLocation().x, go.getWorldLocation().y, go.getWidth(), go.getHeight()));
 
-                        if(go.isAnimated()) {
+                        if (go.isAnimated()) {
                             //Get the next frame of the bitmap
                             //Rotate if necessary
-                            if(go.getFacing() == 1) {
+                            if (go.getFacing() == 1) {
                                 //ROTATE
                                 Matrix flipper = new Matrix();
                                 flipper.preScale(-1, 1);
                                 Rect r = go.getRectToDraw(System.currentTimeMillis());
                                 Bitmap b = Bitmap.createBitmap(lm.bitmapsArray[lm.getBitmapIndex(go.getType())], r.left, r.top, r.width(), r.height(), flipper, true);
                                 canvas.drawBitmap(b, toScreen2d.left, toScreen2d.top, paint);
-                            } else if(go.getFacing() == 2) {
+                            } else if (go.getFacing() == 2) {
                                 // Rotate for slide
                                 Matrix flipper = new Matrix();
                                 flipper.preRotate(-90);
@@ -183,6 +219,7 @@ public class LavaView extends SurfaceView implements Runnable{
                         }
                     }
                 }
+
             }
 
             //Text for debugging
@@ -201,6 +238,7 @@ public class LavaView extends SurfaceView implements Runnable{
                 canvas.drawText("X Velocity: " + lm.gameObjects.get(lm.playerIndex).getxVelocity(), 10, 180, paint);
                 canvas.drawText("Y Velocity: " + lm.gameObjects.get(lm.playerIndex).getyVelocity(), 10, 200, paint);
 
+
                 //for reset the number of clipped objects each frame
                 vp.resetNumClipped();
             } // end dBugging
@@ -211,12 +249,27 @@ public class LavaView extends SurfaceView implements Runnable{
             canvas.drawRoundRect(rf, 15f, 15f, paint);
 
             //draw paused text
-            if (!this.lm.isPlaying()) {
+            if (!this.lm.isPlaying() && !youWin && !youLose) {
                 paint.setTextAlign(Paint.Align.CENTER);
                 paint.setColor(Color.argb(255, 255, 255, 255));
 
                 paint.setTextSize(120);
                 canvas.drawText("Paused", vp.getScreenWidth() / 2, vp.getScreenHeight() / 2, paint);
+            }
+            if(youWin) {
+                paint.setTextAlign(Paint.Align.CENTER);
+                paint.setColor(Color.argb(255, 255, 255, 255));
+
+                paint.setTextSize(120);
+                canvas.drawText("YOU WIN! tap twice for the next level!", vp.getScreenWidth() / 2, vp.getScreenHeight() / 2, paint);
+            }
+
+            if(youLose) {
+                paint.setTextAlign(Paint.Align.CENTER);
+                paint.setColor(Color.argb(255, 255, 255, 255));
+
+                paint.setTextSize(120);
+                canvas.drawText("YOU LOSE! Tap twice to retry" , vp.getScreenWidth() / 2, vp.getScreenHeight() / 2, paint);
             }
 
             // unlock and draw the scene
@@ -252,5 +305,15 @@ public class LavaView extends SurfaceView implements Runnable{
 
         //set the players location as the world center
         vp.setWorldCenter(lm.gameObjects.get(lm.playerIndex).getWorldLocation().x, lm.gameObjects.get(lm.playerIndex).getWorldLocation().y, X_OFFSET);
+    }
+
+    public void lose() {
+        tappedLose = false;
+        loadLevel("LevelBedroom", 15, 2);
+    }
+
+    public void win() {
+        tappedWin = false;
+        loadLevel("LevelLivingroom", 15, 2);
     }
 }

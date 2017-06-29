@@ -49,7 +49,6 @@ public class InputController {
                             l.switchPlayingStatus();
                         } else {
                             mStartingPositionY = motionEvent.getY(0);
-                            System.out.println(mStartingPositionY);
                         }
                         break;
                     case MotionEvent.ACTION_POINTER_DOWN:
